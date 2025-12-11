@@ -1,4 +1,3 @@
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
@@ -9,23 +8,17 @@ namespace OtoGaleriProjem;
 
 public partial class MainForm : Form
 {
-    private readonly OtoGaleriContext _context;
+    private OtoGaleriContext _context = null!;
 
     public MainForm()
     {
-        _context = new OtoGaleriContext();
+        ResetContext();
         InitializeComponent();
     }
 
     private void MainForm_Load(object sender, EventArgs e)
     {
         YukleAgac();
-    }
-
-    protected override void OnFormClosed(FormClosedEventArgs e)
-    {
-        base.OnFormClosed(e);
-        _context.Dispose();
     }
 
     private void YukleAgac()
@@ -73,9 +66,10 @@ public partial class MainForm : Form
 
     private void btnEkle_Click(object sender, EventArgs e)
     {
-        using var form = new AracForm(_context);
+        using var form = new AracForm();
         if (form.ShowDialog(this) == DialogResult.OK)
         {
+            ResetContext();
             YukleAgac();
         }
     }
@@ -89,16 +83,17 @@ public partial class MainForm : Form
             return;
         }
 
-        var arac = _context.Araclar.FirstOrDefault(x => x.Id == seciliId);
-        if (arac == null)
+        var aracVarMi = _context.Araclar.AsNoTracking().Any(x => x.Id == seciliId);
+        if (!aracVarMi)
         {
             MessageBox.Show("Araç bulunamadı.", "Hata", MessageBoxButtons.OK, MessageBoxIcon.Error);
             return;
         }
 
-        using var form = new AracForm(_context, arac);
+        using var form = new AracForm(seciliId);
         if (form.ShowDialog(this) == DialogResult.OK)
         {
+            ResetContext();
             YukleAgac();
             SeciliNodeyuBulVeSec(seciliId.Value);
         }
@@ -120,18 +115,24 @@ public partial class MainForm : Form
             return;
         }
 
-        var arac = _context.Araclar.FirstOrDefault(x => x.Id == seciliId);
-        if (arac != null)
+        using (var context = new OtoGaleriContext())
         {
-            _context.Araclar.Remove(arac);
-            _context.SaveChanges();
-            YukleAgac();
-            TemizleDetay();
+            var arac = context.Araclar.FirstOrDefault(x => x.Id == seciliId);
+            if (arac != null)
+            {
+                context.Araclar.Remove(arac);
+                context.SaveChanges();
+            }
         }
+
+        ResetContext();
+        YukleAgac();
+        TemizleDetay();
     }
 
     private void btnYenile_Click(object sender, EventArgs e)
     {
+        ResetContext();
         YukleAgac();
     }
 
@@ -146,12 +147,12 @@ public partial class MainForm : Form
         txtAciklama.Text = arac.Aciklama ?? string.Empty;
         lblResimYolu.Text = string.IsNullOrWhiteSpace(arac.ResimYolu) ? "Seçilmedi" : arac.ResimYolu;
 
-        if (!string.IsNullOrWhiteSpace(arac.ResimYolu) && File.Exists(arac.ResimYolu))
+        if (GuvenliResimYolu(arac.ResimYolu))
         {
             try
             {
-                using var image = Image.FromFile(arac.ResimYolu);
-                pictureArac.Image = new Bitmap(image);
+                pictureArac.Image?.Dispose();
+                pictureArac.Image = Image.FromFile(arac.ResimYolu!);
             }
             catch
             {
@@ -160,6 +161,7 @@ public partial class MainForm : Form
         }
         else
         {
+            pictureArac.Image?.Dispose();
             pictureArac.Image = null;
         }
     }
@@ -174,7 +176,32 @@ public partial class MainForm : Form
         lblKm.Text = "-";
         lblResimYolu.Text = "-";
         txtAciklama.Text = string.Empty;
+        pictureArac.Image?.Dispose();
         pictureArac.Image = null;
+    }
+
+    private void ResetContext()
+    {
+        _context?.Dispose();
+        _context = new OtoGaleriContext();
+    }
+
+    private static bool GuvenliResimYolu(string? yol)
+    {
+        if (string.IsNullOrWhiteSpace(yol))
+        {
+            return false;
+        }
+
+        try
+        {
+            var fullPath = Path.GetFullPath(yol);
+            return Path.IsPathFullyQualified(fullPath) && File.Exists(fullPath);
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     private int? SeciliAracId()

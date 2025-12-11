@@ -1,10 +1,14 @@
 # OtoGaleriProjem
 
-Basit bir Windows Forms oto galeri uygulaması. .NET 8 ve EF Core (code-first) ile SQL Server (localhost,1445 / sa / Oo_454545) kullanır. Açılışta TreeView ile araçları listeler; ekleme/düzenleme/silme, resim yolu seçimi ve detay görüntüleme içerir.
+ Basit bir Windows Forms oto galeri uygulaması. .NET 8 ve EF Core (code-first) ile SQL Server (localhost,1445) kullanır; sa şifrenizi ortam değişkeni veya `appsettings.json` üzerinden tanımlayabilirsiniz. Açılışta TreeView ile araçları listeler; ekleme/düzenleme/silme, resim yolu seçimi ve detay görüntüleme içerir.
 
 ## Kurulum
-1. .NET 8 SDK yüklü bir **Windows** ortamı kullanın (Windows hedefli projeler için önerilir). Linux/macOS üzerinde derlemek için `EnableWindowsTargeting=true` tanımlıdır ancak yayın senaryoları için Windows önerilir.
-2. Gerekirse bağlantı bilgisini `OtoGaleriProjem/appsettings.json` içinden güncelleyin.
+1. .NET 8 SDK yüklü bir **Windows** ortamı kullanın (Windows hedefli projeler için önerilir). Linux/macOS üzerinde derlemek için `EnableWindowsTargeting=true` tanımlıdır ancak yayım senaryoları için Windows önerilir.
+2. Bağlantı bilgisini ortam değişkeni `OTOGALERI_CONNECTIONSTRING` ile ya da `OtoGaleriProjem/appsettings.json` içindeki `DefaultConnection` değeriyle ayarlayın. Örnek:
+   ```
+   Server=localhost,1445;Database=OtoGaleriDb;User ID=sa;Password=<SA_SIFRESI>;TrustServerCertificate=True;
+   ```
+   (Gerekirse problemde paylaşılan sa şifresini ortam değişkenine yazabilirsiniz.)
 3. NuGet bağımlılıklarını yükleyin:
    ```bash
    dotnet restore

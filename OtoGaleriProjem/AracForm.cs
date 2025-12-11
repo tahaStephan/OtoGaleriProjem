@@ -1,19 +1,28 @@
+using System.Linq;
 using OtoGaleriProjem.Data;
 using OtoGaleriProjem.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace OtoGaleriProjem;
 
 public partial class AracForm : Form
 {
-    private readonly OtoGaleriContext _context;
     private readonly Arac _arac;
 
-    public AracForm(OtoGaleriContext context, Arac? arac = null)
+    public AracForm(int? aracId = null)
     {
-        _context = context;
-        _arac = arac ?? new Arac();
+        if (aracId == null)
+        {
+            _arac = new Arac();
+        }
+        else
+        {
+            using var context = new OtoGaleriContext();
+            _arac = context.Araclar.AsNoTracking().FirstOrDefault(x => x.Id == aracId) ?? new Arac();
+        }
+
         InitializeComponent();
-        Text = arac == null ? "Araç Ekle" : "Araç Düzenle";
+        Text = aracId == null ? "Araç Ekle" : "Araç Düzenle";
         VeriyiFormaTasiyin();
     }
 
@@ -31,9 +40,9 @@ public partial class AracForm : Form
 
     private bool FormuOku()
     {
-        if (string.IsNullOrWhiteSpace(txtMarka.Text) || string.IsNullOrWhiteSpace(txtModel.Text))
+        if (string.IsNullOrWhiteSpace(txtMarka.Text) || string.IsNullOrWhiteSpace(txtModel.Text) || string.IsNullOrWhiteSpace(txtRenk.Text))
         {
-            MessageBox.Show("Marka ve model boş bırakılamaz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            MessageBox.Show("Marka, model ve renk boş bırakılamaz.", "Uyarı", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return false;
         }
 
@@ -55,12 +64,17 @@ public partial class AracForm : Form
             return;
         }
 
+        using var context = new OtoGaleriContext();
         if (_arac.Id == 0)
         {
-            _context.Araclar.Add(_arac);
+            context.Araclar.Add(_arac);
+        }
+        else
+        {
+            context.Araclar.Update(_arac);
         }
 
-        _context.SaveChanges();
+        context.SaveChanges();
         DialogResult = DialogResult.OK;
         Close();
     }
